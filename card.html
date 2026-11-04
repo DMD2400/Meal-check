@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>식사 QR 카드</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root{--navy:#1f3a5f;--text:#1d2633;--muted:#6b7684;--bg:#eef1f5}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+       min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
+  .card{background:#fff;width:100%;max-width:380px;border-radius:20px;overflow:hidden;box-shadow:0 6px 24px rgba(0,0,0,.12);text-align:center}
+  .top{background:var(--navy);color:#fff;padding:16px}
+  .top .org{font-size:13px;opacity:.85;letter-spacing:.5px}
+  .top .title{font-size:20px;font-weight:800;margin-top:4px}
+  .body{padding:22px 20px 18px}
+  .team{font-size:26px;font-weight:800;word-break:keep-all}
+  .period{font-size:16px;color:var(--muted);margin-top:4px}
+  #qr{display:flex;justify-content:center;margin:20px auto 10px;padding:12px;background:#fff}
+  #qr img,#qr canvas{width:240px!important;height:240px!important}
+  .code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:18px;letter-spacing:2px;color:var(--muted)}
+  .guide{font-size:15px;line-height:1.6;margin-top:14px;background:#f5f7fa;border-radius:12px;padding:12px}
+  .btn{display:block;width:100%;margin-top:14px;border:0;border-radius:12px;padding:14px;font-size:16px;font-weight:700;background:var(--navy);color:#fff;cursor:pointer}
+  .err{padding:40px 20px;font-size:16px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="top">
+    <div class="org">대웅경영개발원</div>
+    <div class="title">식사 QR 카드</div>
+  </div>
+  <div class="body" id="body">
+    <div class="team" id="team"></div>
+    <div class="period" id="period"></div>
+    <div id="qr"></div>
+    <div class="code" id="code"></div>
+    <div class="guide">식당 입구 태블릿에 이 화면을 비춰주세요.<br>화면 밝기를 높이면 더 잘 인식됩니다.</div>
+    <button class="btn" id="saveBtn">QR 이미지로 저장</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const q = new URLSearchParams(location.search);
+  const code = (q.get('c') || '').trim().toUpperCase();
+  const name = (q.get('n') || '').trim();
+  const period = (q.get('p') || '').trim();
+
+  if (!code){
+    document.getElementById('body').innerHTML = '<div class="err">QR 정보가 없는 링크입니다.<br>연수원 담당자에게 다시 받아주세요.</div>';
+    return;
+  }
+  document.title = (name ? name + ' ' : '') + '식사 QR';
+  document.getElementById('team').textContent = name || '연수 팀';
+  document.getElementById('period').textContent = period ? '이용 기간 ' + period : '';
+  document.getElementById('code').textContent = code;
+
+  new QRCode(document.getElementById('qr'), {
+    text: code, width: 480, height: 480,
+    colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M
+  });
+
+  /* 카드 모양 그대로 PNG로 저장 */
+  document.getElementById('saveBtn').onclick = function(){
+    const src = document.querySelector('#qr canvas') || document.querySelector('#qr img');
+    if (!src) return;
+    const W = 720, H = 1000, c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    const x = c.getContext('2d');
+    x.fillStyle = '#ffffff'; x.fillRect(0, 0, W, H);
+    x.fillStyle = '#1f3a5f'; x.fillRect(0, 0, W, 150);
+    x.fillStyle = '#ffffff'; x.textAlign = 'center';
+    x.font = '26px sans-serif'; x.fillText('대웅경영개발원', W/2, 58);
+    x.font = 'bold 40px sans-serif'; x.fillText('식사 QR 카드', W/2, 112);
+    x.fillStyle = '#1d2633'; x.font = 'bold 46px sans-serif'; x.fillText(name || '연수 팀', W/2, 230);
+    if (period){ x.fillStyle = '#6b7684'; x.font = '30px sans-serif'; x.fillText('이용 기간 ' + period, W/2, 280); }
+    x.drawImage(src, (W - 480)/2, 320, 480, 480);
+    x.fillStyle = '#6b7684'; x.font = '32px monospace'; x.fillText(code, W/2, 860);
+    x.fillStyle = '#1d2633'; x.font = '26px sans-serif'; x.fillText('식당 입구 태블릿에 비춰주세요', W/2, 930);
+    const a = document.createElement('a');
+    a.download = (name || code) + '_식사QR.png';
+    a.href = c.toDataURL('image/png');
+    document.body.appendChild(a); a.click(); a.remove();
+  };
+})();
+</script>
+</body>
+</html>
